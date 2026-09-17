@@ -1,5 +1,6 @@
 #include "ssd1306.h"
 #include "stm32f4xx.h"
+#include <string.h> // Для memcpy(), чтобы очистить буфер кадра
 
 // Буфер кадра: 128x64 пикселей / 8 бит = 1024 байта
 static uint8_t frame_buffer[SSD1306_WIDTH * SSD1306_HEIGHT / 8];
@@ -97,11 +98,10 @@ void SSD1306_Init()
     SSD1306_Update();
 }
 
-// Очищаем буфер кадра
-void SSD1306_Clear() 
+void SSD1306_Clear(void) 
 {
-    for (uint16_t i = 0; i < sizeof(frame_buffer); i++) 
-        frame_buffer[i] = BLACK; // Выключаем все пиксели
+    // Заполняет весь frame_buffer значением BLACK (0x00)
+    memset(frame_buffer, BLACK, sizeof(frame_buffer));
 }
 
 // Рисуем пиксель

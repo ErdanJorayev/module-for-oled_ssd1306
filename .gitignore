@@ -20,8 +20,8 @@ Release/
 .idea/
 *.launch
 
-# Библиотеки вендоров (так как пишем bare-metal с нуля)
 CMSIS/
+
 
 # Системные файлы ОС
 .DS_Store

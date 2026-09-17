@@ -9,6 +9,7 @@ int main(void)
     RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN;
     GPIOC->MODER |= GPIO_MODER_MODER13_0; // Output
     GPIOC->BSRR = GPIO_BSRR_BR13;         // Зажечь светодиод
+    
     // Настраиваем тактривание 
     RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;  // Тактируем порт B
     RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;   // Тактируем модуль I2C1
@@ -23,8 +24,8 @@ int main(void)
     GPIOB->OTYPER  |= (GPIO_OTYPER_OT6 | GPIO_OTYPER_OT7);       
 
     // Подаем напряжение через резистор, сначала очищаем
-    GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR6 | GPIO_PUPDR_PUPDR7);     // Очистка (00)
-    GPIOB->PUPDR |=  (GPIO_PUPDR_PUPDR6_0 | GPIO_PUPDR_PUPDR7_0); // Запись (01 - Pull-Up)
+    GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR6 | GPIO_PUPDR_PUPDR7);         // Очистка (00)
+    GPIOB->PUPDR |=  (GPIO_PUPDR_PUPDR6_0 | GPIO_PUPDR_PUPDR7_0);     // Запись (01 - Pull-Up)
 
     // Устанавливаем скорость работы транзисторов (по сути скорость их открытие и закрытие)
     GPIOB->OSPEEDR &= ~(GPIO_OSPEEDR_OSPEED6 | GPIO_OSPEEDR_OSPEED7); // Очистка (00)
@@ -40,7 +41,7 @@ int main(void)
     SSD1306_Clear(); // Очистка кадра буфера
 
     // Печатаем строку
-    SSD1306_WriteString(0, 0, "ALEX MERSER", WHITE); 
+    SSD1306_WriteString(0, 0, "GULJAHAN ", WHITE); 
 
     // Обновление кадра, отправляем данные
     SSD1306_Update();
