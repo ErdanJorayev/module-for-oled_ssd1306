@@ -41,7 +41,7 @@ int main(void)
     SSD1306_Clear(); // Очистка кадра буфера
 
     // Печатаем строку
-    SSD1306_WriteString(0, 0, "GULJAHAN ", WHITE); 
+    SSD1306_WriteString(0, 0, "ALEX", ON); 
 
     // Обновление кадра, отправляем данные
     SSD1306_Update();

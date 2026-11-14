@@ -8,12 +8,13 @@
 #define SSD1306_WIDTH   128
 #define SSD1306_HEIGHT  64
 
+
 // Цвета
 typedef enum 
 {
-    BLACK = 0x00, // Пиксель выключен
-    WHITE = 0x01  // Пиксель светится
-} SSD1306_Color_t;
+    OFF = 0x00, // Пиксель выключен
+    ON  = 0x01  // Пиксель светится
+} PixelState;
 
 
 // Инициализация и системные функции
@@ -22,11 +23,11 @@ void SSD1306_Update();
 void SSD1306_Clear();
 
 // Рисование пикселя
-void SSD1306_DrawPixel(uint8_t x, uint8_t y, SSD1306_Color_t color);
+void SSD1306_DrawPixel(uint8_t x, uint8_t y, PixelState state);
 
 // Вывод буквы
-void SSD1306_WriteChar(uint8_t x, uint8_t y, char ch, SSD1306_Color_t color);
+void SSD1306_WriteChar(uint8_t x, uint8_t y, char ch, PixelState state);
 // Вывод текста
-void SSD1306_WriteString(uint8_t x, uint8_t y, const char *str, SSD1306_Color_t color);
+void SSD1306_WriteString(uint8_t x, uint8_t y, const char *str, PixelState state);
 
 #endif 

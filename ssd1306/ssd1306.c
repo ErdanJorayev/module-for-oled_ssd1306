@@ -1,6 +1,5 @@
 #include "ssd1306.h"
 #include "stm32f4xx.h"
-#include <string.h> // Для memcpy(), чтобы очистить буфер кадра
 
 // Буфер кадра: 128x64 пикселей / 8 бит = 1024 байта
 static uint8_t frame_buffer[SSD1306_WIDTH * SSD1306_HEIGHT / 8];
@@ -11,9 +10,14 @@ static const uint8_t INIT_CMDS[] =
     0xAE,       // Display OFF
     0x20, 0x00, // Horizontal Addressing Mode
     0x8D, 0x14, // Charge Pump Enable (7.5V)
+    
+    // --- Поворот экрана на 180 градусов ---
+    0xA1,       // Set Segment Re-map (X: справа налево)
+    0xC8,       // Set COM Output Scan Direction (Y: снизу вверх)
+    // ------------------------------------
+    
     0xAF        // Display ON
 };
-
 // Команды сброса указателя адреса (на верхний левый угол 0,0)
 static const uint8_t RESET_ADDR_CMDS[] = 
 {
@@ -22,7 +26,7 @@ static const uint8_t RESET_ADDR_CMDS[] =
 };
 
 // Отправка команд
-static void SSD1306_WriteCmds(const uint8_t *cmds, uint16_t count) 
+static void SSD1306_WriteCmds(const uint8_t * cmds, uint16_t count) 
 {
     // 1. Старт и адрес
     I2C1->CR1 |= I2C_CR1_START;
@@ -81,36 +85,34 @@ static void SSD1306_WriteData()
     I2C1->CR1 |= I2C_CR1_STOP;
 }
 
-// Настраиваем модуль I2C1
-void SSD1306_Init() 
+
+void SSD1306_Init(void) 
 {
-    I2C1->CR2   |= 16;         // Частота APB1 = 16 МГц
-    I2C1->CCR    = 80;         // Делитель для получения 100 кГц
-    I2C1->TRISE  = 17;         // Максимальное время подъема сигнала
-    I2C1->CR1   |= I2C_CR1_PE; // Включаем модуль I2C1 (Peripheral Enable)
+    I2C1->CR2   &= ~I2C_CR2_FREQ; // Указываем скорость тактирование шины APB1, чтобы потом поделить
+    I2C1->CR2   |= 16;           
+    I2C1->CCR = I2C_CCR_FS | 13;  // Ставим флаг FS и указываем скорость по формуле для fast mode
+    I2C1->TRISE = 6;              // Указываем время нарастание фронта  
+    I2C1->CR1   |= I2C_CR1_PE;    // Включаем I2C1
 
-    // Програмная задержка чтобы все стабилизировалось
-    for (volatile int i = 0; i < 100000; i++);
-
+    // Отправка команд инициализации экрана
     SSD1306_WriteCmds(INIT_CMDS, sizeof(INIT_CMDS));
-
-    SSD1306_Clear();
-    SSD1306_Update();
 }
 
-void SSD1306_Clear(void) 
+
+// Очищаем буфер кадра
+void SSD1306_Clear() 
 {
-    // Заполняет весь frame_buffer значением BLACK (0x00)
-    memset(frame_buffer, BLACK, sizeof(frame_buffer));
+    for (uint16_t i = 0; i < sizeof(frame_buffer); i++) 
+        frame_buffer[i] = OFF; // Выключаем все пиксели
 }
 
 // Рисуем пиксель
-void SSD1306_DrawPixel(uint8_t x, uint8_t y, SSD1306_Color_t color) 
+void SSD1306_DrawPixel(uint8_t x, uint8_t y, PixelState state) 
 {
     if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) 
         return;
 
-    if (color == WHITE) 
+    if (state == ON) 
         frame_buffer[x + (y / 8) * SSD1306_WIDTH] |= (1 << (y % 8));
     else 
         frame_buffer[x + (y / 8) * SSD1306_WIDTH] &= ~(1 << (y % 8));
@@ -123,7 +125,7 @@ void SSD1306_Update()
 }
 
 // Отрисовка символа
-void SSD1306_WriteChar(uint8_t x, uint8_t y, char ch, SSD1306_Color_t color) 
+void SSD1306_WriteChar(uint8_t x, uint8_t y, char ch, PixelState state) 
 {
     // Проверка на печатаемые символы ASCII
     if (ch < 32 || ch > 126) 
@@ -139,15 +141,15 @@ void SSD1306_WriteChar(uint8_t x, uint8_t y, char ch, SSD1306_Color_t color)
         for (uint8_t j = 0; j < 8; j++) 
         {
             if (line & (1 << j)) 
-                SSD1306_DrawPixel(x + i, y + j, color);
+                SSD1306_DrawPixel(x + i, y + j, state);
             else
-                SSD1306_DrawPixel(x + i, y + j, (color == WHITE) ? BLACK : WHITE);
+                SSD1306_DrawPixel(x + i, y + j, (state == ON) ? OFF : ON);
         }
     }
 }
 
 // Отрисовка строки
-void SSD1306_WriteString(uint8_t x, uint8_t y, const char *str, SSD1306_Color_t color) 
+void SSD1306_WriteString(uint8_t x, uint8_t y, const char *str, PixelState state) 
 {
     while (*str) 
     {
@@ -158,7 +160,7 @@ void SSD1306_WriteString(uint8_t x, uint8_t y, const char *str, SSD1306_Color_t 
             y += 8;     // Сдвиг вниз по Y на высоту символа
             if (y >= 64) break; // Экран закончился
         }
-        SSD1306_WriteChar(x, y, *str, color);
+        SSD1306_WriteChar(x, y, *str, state);
         x += 6; // Сдвиг на 5 пикселей символа + 1 пиксель межсимвольный интервал
         str++;
     }
